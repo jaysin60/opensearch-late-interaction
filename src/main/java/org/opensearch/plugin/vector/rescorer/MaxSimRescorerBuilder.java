@@ -8,21 +8,23 @@ package org.opensearch.plugin.vector.rescorer;
 import org.opensearch.core.ParseField;
 import org.opensearch.core.common.io.stream.StreamInput;
 import org.opensearch.core.common.io.stream.StreamOutput;
-import org.opensearch.xcontent.ConstructingObjectParser;
-import org.opensearch.xcontent.ObjectParser;
-import org.opensearch.xcontent.XContentBuilder;
-import org.opensearch.xcontent.XContentParser;
+import org.opensearch.core.xcontent.ConstructingObjectParser;
+import org.opensearch.core.xcontent.ObjectParser;
+import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.search.rescore.RescorerBuilder;
 import org.opensearch.search.rescore.RescoreContext;
+import org.opensearch.search.rescore.Rescorer;
 import org.opensearch.index.query.QueryShardContext;
+import org.opensearch.index.query.QueryRewriteContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static org.opensearch.xcontent.ConstructingObjectParser.constructorArg;
-import static org.opensearch.xcontent.ConstructingObjectParser.optionalConstructorArg;
+import static org.opensearch.core.xcontent.ConstructingObjectParser.constructorArg;
+import static org.opensearch.core.xcontent.ConstructingObjectParser.optionalConstructorArg;
 
 /**
  * Builder for the MaxSim rescorer which computes the maximum similarity
@@ -36,9 +38,9 @@ public class MaxSimRescorerBuilder extends RescorerBuilder<MaxSimRescorerBuilder
     private static final ParseField FIELD_FIELD = new ParseField("field");
     private static final ParseField SIMILARITY_FIELD = new ParseField("similarity");
 
-    private final List<List<Float>> queryVectors;
-    private final String field;
-    private final String similarity;
+    final List<List<Float>> queryVectors;
+    final String field;
+    final String similarity;
 
     @SuppressWarnings("unchecked")
     private static final ConstructingObjectParser<MaxSimRescorerBuilder, Void> PARSER = new ConstructingObjectParser<>(
@@ -189,7 +191,7 @@ public class MaxSimRescorerBuilder extends RescorerBuilder<MaxSimRescorerBuilder
         
         public MaxSimRescoreContext(int windowSize, RescorerBuilder<?> rescorerBuilder, 
                                  List<List<Float>> queryVectors, String field, String similarity) {
-            super(windowSize, rescorerBuilder);
+            super(windowSize, (Rescorer) rescorerBuilder);
             this.queryVectors = queryVectors;
             this.field = field;
             this.similarity = similarity;
@@ -226,6 +228,26 @@ public class MaxSimRescorerBuilder extends RescorerBuilder<MaxSimRescorerBuilder
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), queryVectors, field, similarity);
+    }
+
+    @Override
+    protected void doXContent(XContentBuilder builder, Params params) throws IOException {
+        builder.startArray(QUERY_VECTORS_FIELD.getPreferredName());
+        for (List<Float> vector : queryVectors) {
+            builder.startArray();
+            for (Float value : vector) {
+                builder.value(value);
+            }
+            builder.endArray();
+        }
+        builder.endArray();
+        builder.field(FIELD_FIELD.getPreferredName(), field);
+        builder.field(SIMILARITY_FIELD.getPreferredName(), similarity);
+    }
+
+    @Override
+    public RescorerBuilder<MaxSimRescorerBuilder> rewrite(QueryRewriteContext context) throws IOException {
+        return this;
     }
 
     /**

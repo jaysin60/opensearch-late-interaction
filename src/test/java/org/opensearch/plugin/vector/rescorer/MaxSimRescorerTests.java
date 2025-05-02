@@ -18,12 +18,12 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.opensearch.core.common.io.stream.BytesStreamOutput;
+import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.core.common.io.stream.StreamInput;
-import org.opensearch.xcontent.XContentBuilder;
-import org.opensearch.xcontent.XContentFactory;
-import org.opensearch.xcontent.XContentParser;
-import org.opensearch.xcontent.XContentType;
+import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.common.xcontent.XContentFactory;
+import org.opensearch.core.xcontent.XContentParser;
+import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.search.rescore.RescoreContext;
 import org.opensearch.test.OpenSearchTestCase;
 
@@ -81,8 +81,7 @@ public class MaxSimRescorerTests extends OpenSearchTestCase {
         String similarity = "dot_product";
         
         MaxSimRescorerBuilder builder = new MaxSimRescorerBuilder(queryVectors, field, similarity);
-        
-        XContentBuilder xContentBuilder = XContentFactory.contentBuilder(XContentType.JSON);
+        XContentBuilder xContentBuilder = XContentFactory.jsonBuilder();
         builder.toXContent(xContentBuilder, null);
         
         // Parse back
